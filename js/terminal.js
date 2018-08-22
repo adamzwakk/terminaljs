@@ -58,7 +58,7 @@ function Terminal(options){
 						this.command = this.command.substr(0,this.command.length-1);
 						break;
 					default:
-						if (keyName.length === 1 && /[a-zA-Z0-9-_/ ]/.test(keyName)){
+						if (keyName.length === 1 && /[a-zA-Z0-9-_/. ]/.test(keyName)){
 							this.command += keyName;
 						}
 				}
@@ -138,9 +138,17 @@ function Terminal(options){
 			case "ls":
 			case "dir":
 				this.linebreak();
-				this.drawLine('text.txt');
+				this.drawLine('test.txt');
+				break;
+			case "open":
+			case "cat":
 				this.linebreak();
-				this.drawLine('test5.txt');
+				if(typeof com[1] === 'undefined'){
+					this.drawLine('-bash: need arugment to use open');
+				} else {
+					this.drawLine('-bash: '+com[1]+' is an invalid file');
+				}
+
 				break;
 			default:
 				this.linebreak();
