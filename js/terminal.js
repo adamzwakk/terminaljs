@@ -16,24 +16,36 @@ function Terminal(options){
 	    fontSize: 24,
 	    fill: '#ffffff'
 	});
+	this.mainContainer = new PIXI.Container();
 	this.textContainer = new PIXI.Container();
+	this.crtFilter = new PIXI.filters.CRTFilter({
+		// options at https://github.com/pixijs/pixi-filters/blob/master/filters/crt/src/CRTFilter.js
+		curvature:1,
+		vignettingAlpha:0.3,
+		noise:1,
+		time:5
+	});
 
 	this.startup = function(){
-		this.app.stage.addChild(this.textContainer);
 		document.body.appendChild(this.app.view);
-		this.textContainer.filterArea = new PIXI.Rectangle(0,0,800,600);
-		this.textContainer.filters = [new PIXI.filters.CRTFilter({
-			// options at https://github.com/pixijs/pixi-filters/blob/master/filters/crt/src/CRTFilter.js
-			curvature:4,
-			vignettingAlpha:0.5
-		})];
+		this.app.stage.addChild(this.mainContainer);
+		var graphics = new PIXI.Graphics();
+		graphics.beginFill(0x999999);
+		graphics.drawRect(0, 0, 800,600);
+		this.mainContainer.addChild(graphics);
+		this.mainContainer.addChild(this.textContainer);
+		this.mainContainer.filters = [this.crtFilter];
+
+		this.app.ticker.add(function(delta) {
+			that.crtFilter.time = that.crtFilter.time*delta;
+		});
 
 		for (i = 0; i < this.columns; i++) { 
 			text = new PIXI.Text('',this.textStyle);
 			text.x = 8;
 			text.y = (this.columns*i)+8;
 			this.outputLines.push(text);
-		}		
+		}
 
 		document.addEventListener('keydown', (event) => {
 			if(this.allowCommands){	
@@ -72,15 +84,12 @@ function Terminal(options){
 		}
 	}
 
-	this.drawNewBashLine = function(){
-		this.outputLines[this.activeLine].text = this.prefix;
-		this.textContainer.addChild(this.outputLines[this.activeLine]);
-	}
-
-	this.drawLine = function(text){
+	this.drawLine = function(text,lbAfter){
 		this.outputLines[this.activeLine].text = text;
 		this.textContainer.addChild(this.outputLines[this.activeLine]);
-		this.activeLine++;
+		if(lbAfter){
+			this.activeLine++;
+		}
 	}
 
 	this.initTerminal = function(){
@@ -90,14 +99,11 @@ function Terminal(options){
 		}
 
 		this.activeLine = 0;
-		this.drawNewBashLine();
+		this.drawLine(this.prefix,false);
 	}
 
 	this.readyForInput = function(){
-		// var that = this;
-		// this.app.ticker.add(function(delta) {
-		// 	//that.drawCommandOutput();
-		// });
+		var that = this;
 	}
 
 	this.sendCommand = function(){
@@ -120,11 +126,11 @@ function Terminal(options){
 				break;
 			default:
 				this.activeLine++;
-				this.drawLine('-bash: '+com[0]+': command not found');
+				this.drawLine('-bash: '+com[0]+': command not found',true);
 		}
 
 		this.command = '';
-		this.drawNewBashLine();
+		this.drawLine(this.prefix,false);
 	}
 
 	this.bootOS = function(){
@@ -146,7 +152,7 @@ function Terminal(options){
 					lineCount++;
 					var l = lines[time];
 					setTimeout(function(lineCount){
-						that.drawLine(l);
+						that.drawLine(l,true);
 						if(lineCount === length)
 						{
 							callback();
