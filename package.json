@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@pixi/filter-crt": "^2.6.0",
+    "pixi.js": "^4.8.1"
+  }
+}
