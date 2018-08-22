@@ -19,7 +19,14 @@
 	<script>
 		(function() {
 			var t = new Terminal({
-				columns:25,
+				width:1024,
+				height:768,
+				columns:28,
+				defaultfont:{
+					family:'VT323',
+					size:28,
+					color:'#ffffff'
+				},
 				path:'~',
 				user:'root',
 				server:'my-server',

@@ -4,23 +4,28 @@ function Terminal(options){
 	this.user = options.user;
 	this.server = options.server;
 	this.bootSeq = options.bootSeq;
+	this.width = options.width;
+	this.height = options.height;
+	this.font = options.defaultfont;
 
-	this.app = new PIXI.Application(800,600);
+	this.app = new PIXI.Application(this.width,this.height);
 	this.command = '';
 	this.allowCommands = false;
+	this.drawingLine = false;
 	this.prefix = this.user+'@'+this.server+':'+this.path+'$ ';
 	this.outputLines = [];
 	this.activeLine = 0;
 	this.textStyle = new PIXI.TextStyle({
-	    fontFamily: 'VT323',
-	    fontSize: 24,
-	    fill: '#ffffff'
+	    fontFamily: this.font.family,
+	    fontSize: this.font.size,
+	    fill: this.font.color
 	});
 	this.mainContainer = new PIXI.Container();
 	this.textContainer = new PIXI.Container();
 	this.crtFilter = new PIXI.filters.CRTFilter({
 		// options at https://github.com/pixijs/pixi-filters/blob/master/filters/crt/src/CRTFilter.js
-		curvature:1,
+		curvature:5,
+		lineWidth:4,
 		vignettingAlpha:0.3,
 		noise:1,
 		time:5
@@ -31,7 +36,7 @@ function Terminal(options){
 		this.app.stage.addChild(this.mainContainer);
 		var graphics = new PIXI.Graphics();
 		graphics.beginFill(0x999999);
-		graphics.drawRect(0, 0, 800,600);
+		graphics.drawRect(0, 0, this.width,this.height);
 		this.mainContainer.addChild(graphics);
 		this.mainContainer.addChild(this.textContainer);
 		this.mainContainer.filters = [this.crtFilter];
@@ -41,7 +46,7 @@ function Terminal(options){
 		});
 
 		for (i = 0; i < this.columns; i++) { 
-			text = new PIXI.Text('',this.textStyle);
+			text = new PIXI.Text(null,this.textStyle);
 			text.x = 8;
 			text.y = (this.columns*i)+8;
 			this.outputLines.push(text);
@@ -85,8 +90,29 @@ function Terminal(options){
 	}
 
 	this.drawLine = function(text,lbAfter){
-		this.outputLines[this.activeLine].text = text;
-		this.textContainer.addChild(this.outputLines[this.activeLine]);
+		if(text !== ''){
+			drawLineTicker = new PIXI.ticker.Ticker({speed:0.3});
+			var line = this.outputLines[this.activeLine];
+			var chars = text.split('');
+			this.textContainer.addChild(line);
+
+			var index = 0;
+			drawLineTicker.add(function(delta) {
+				if(line.text !== '' && line.text.substr(-1,1) === '█'){
+					line.text = line.text.substr(0,line.text.length-1);
+				}
+				if(index >= chars.length){
+					drawLineTicker.stop();
+					drawLineTicker.remove();
+					delete drawLineTicker;
+					return;
+				}
+
+				line.text += chars[index]+'█';
+				index++;
+			}).start();
+		}
+		
 		if(lbAfter){
 			this.activeLine++;
 		}
@@ -94,7 +120,7 @@ function Terminal(options){
 
 	this.initTerminal = function(){
 		for (i = 0; i < this.outputLines.length; i++) { 
-			this.outputLines[i].text = '';
+			this.outputLines[i].text = null;
 			this.textContainer.removeChild(this.outputLines[i]);
 		}
 
@@ -121,16 +147,16 @@ function Terminal(options){
 				location.reload();
 				return;
 			case "":
-				//whatareya doin!
-				this.activeLine++;
-				break;
+				//no command
+				this.drawLine('',true);
+				return;
 			default:
 				this.activeLine++;
-				this.drawLine('-bash: '+com[0]+': command not found',true);
+				this.drawLine('-bash: '+com[0]+': command not found',false);
 		}
 
 		this.command = '';
-		this.drawLine(this.prefix,false);
+		this.drawLine('',true);
 	}
 
 	this.bootOS = function(){
@@ -162,5 +188,9 @@ function Terminal(options){
 				});
 			}
 		});
+	}
+
+	this.animateCRT = function(delta){
+		this.crtFilter.time = this.crtFilter.time*delta;
 	}
 }
