@@ -15,7 +15,23 @@
 	</script>
 </head>
 <body>
-	<script src="./js/bootup.js"></script>
+	<!--<script src="./js/bootup.js"></script>-->
 	<script src="./js/terminal.js"></script>
+	<script>
+		var t = new Terminal({
+			columns:25,
+			path:'~',
+			user:'root',
+			server:'my-servsdfsder',
+			// bootSeq: [
+			// 	'Starting up...',
+			// 	'...'
+			// 	'...',
+			// 	'Done!'
+			// ]
+		});
+
+		t.startup();
+	</script>
 </body>
 </html>

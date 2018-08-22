@@ -1,6 +1,7 @@
 function bootup(){
 	setTimeout(function(){
 		drawLine('Boot-up sequence starting...');
+
 		setTimeout(function(){
 			drawLine('...');
 			setTimeout(function(){
