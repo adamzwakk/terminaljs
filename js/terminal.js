@@ -101,25 +101,30 @@ function Terminal(options){
 	}
 
 	this.sendCommand = function(){
-		switch(this.command){
+		var com = this.command.split(' ');
+		switch(com[0]){
 			case "clr":
+				this.initTerminal();
+				this.command = '';
+				return;
+			case "clear":
 				this.initTerminal();
 				this.command = '';
 				return;
 			case "reboot":
 				location.reload();
 				return;
+			case "":
+				//whatareya doin!
+				this.activeLine++;
+				break;
+			default:
+				this.activeLine++;
+				this.drawLine('-bash: '+com[0]+': command not found');
 		}
-		
-		//ajax bullshit otherwise...
 
 		this.command = '';
-		this.activeLine++;
 		this.drawNewBashLine();
-	}
-
-	this.randomNumber = function(min, max) {
-	    return Math.floor(Math.random() * (max - min + 1)) + min;
 	}
 
 	this.bootOS = function(){
