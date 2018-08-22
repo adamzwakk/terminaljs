@@ -45,13 +45,6 @@ function Terminal(options){
 			that.crtFilter.time = that.crtFilter.time*delta;
 		});
 
-		for (i = 0; i < this.columns; i++) { 
-			text = new PIXI.Text(null,this.textStyle);
-			text.x = 8;
-			text.y = (this.columns*i)+8;
-			this.outputLines.push(text);
-		}
-
 		document.addEventListener('keydown', (event) => {
 			if(this.allowCommands){	
 				var keycode = event.keyCode;
@@ -69,9 +62,8 @@ function Terminal(options){
 							this.command += keyName;
 						}
 				}
-				this.textContainer.removeChild(this.outputLines[this.activeLine]);
+
 				this.outputLines[this.activeLine].text = this.prefix+this.command;
-				this.textContainer.addChild(this.outputLines[this.activeLine]);
 			}
 		});
 
@@ -79,7 +71,9 @@ function Terminal(options){
 		if(typeof this.bootSeq === 'object'){
 			setTimeout(function(){
 				that.playOutputTimeline(that.bootSeq,function(){
-					that.bootOS();
+					setTimeout(function(){
+						that.bootOS();
+					},500);
 				});
 			},500);
 		} else {
@@ -89,56 +83,46 @@ function Terminal(options){
 		}
 	}
 
-	this.drawLine = function(text,lbAfter){
-		if(text !== ''){
-			drawLineTicker = new PIXI.ticker.Ticker({speed:0.3});
-			var line = this.outputLines[this.activeLine];
-			var chars = text.split('');
-			this.textContainer.addChild(line);
-
-			var index = 0;
-			drawLineTicker.add(function(delta) {
-				if(line.text !== '' && line.text.substr(-1,1) === '█'){
-					line.text = line.text.substr(0,line.text.length-1);
-				}
-				if(index >= chars.length){
-					drawLineTicker.stop();
-					drawLineTicker.remove();
-					delete drawLineTicker;
-					return;
-				}
-
-				line.text += chars[index]+'█';
-				index++;
-			}).start();
+	this.drawLine = function(text,callback){
+		if((this.activeLine+2) >= this.columns){
+			console.log('whoooa there');
+			return;
 		}
-		
-		if(lbAfter){
-			this.activeLine++;
-		}
+
+		var ptext = this.createOutputLine();
+		var chars = text.split('');
+		this.textContainer.addChild(ptext);
+
+		var index = 0;
+		drawLineTicker = new PIXI.ticker.Ticker({speed:0.3});
+		drawLineTicker.add(function(delta) {
+			if(ptext.text !== '' && ptext.text.substr(-1,1) === '█'){
+				ptext.text = ptext.text.substr(0,ptext.text.length-1);
+			}
+			if(index >= chars.length){
+				drawLineTicker.stop();
+				drawLineTicker.remove();
+				return;
+			}
+			ptext.text = (ptext.text+chars[index]+'█').trim();
+			index++;
+		}).start();
 	}
 
 	this.initTerminal = function(){
 		for (i = 0; i < this.outputLines.length; i++) { 
-			this.outputLines[i].text = null;
 			this.textContainer.removeChild(this.outputLines[i]);
 		}
 
+		this.outputLines = [];
 		this.activeLine = 0;
-		this.drawLine(this.prefix,false);
-	}
-
-	this.readyForInput = function(){
-		var that = this;
+		this.drawLine(this.prefix+'█');
 	}
 
 	this.sendCommand = function(){
 		var com = this.command.split(' ');
 		switch(com[0]){
 			case "clr":
-				this.initTerminal();
-				this.command = '';
-				return;
 			case "clear":
 				this.initTerminal();
 				this.command = '';
@@ -148,20 +132,29 @@ function Terminal(options){
 				return;
 			case "":
 				//no command
-				this.drawLine('',true);
+				this.linebreak();
+				this.drawLine('');
 				return;
+			case "ls":
+			case "dir":
+				this.linebreak();
+				this.drawLine('text.txt');
+				this.linebreak();
+				this.drawLine('test5.txt');
+				break;
 			default:
-				this.activeLine++;
-				this.drawLine('-bash: '+com[0]+': command not found',false);
+				this.linebreak();
+				this.drawLine('-bash: '+com[0]+': command not found');
 		}
 
 		this.command = '';
-		this.drawLine('',true);
+		this.linebreak();
+		this.drawLine('');
+
 	}
 
 	this.bootOS = function(){
 		this.initTerminal(); 
-		this.readyForInput();
 		this.allowCommands = true;
 	}
 
@@ -178,7 +171,8 @@ function Terminal(options){
 					lineCount++;
 					var l = lines[time];
 					setTimeout(function(lineCount){
-						that.drawLine(l,true);
+						that.drawLine(l);
+						that.linebreak();
 						if(lineCount === length)
 						{
 							callback();
@@ -190,7 +184,20 @@ function Terminal(options){
 		});
 	}
 
-	this.animateCRT = function(delta){
-		this.crtFilter.time = this.crtFilter.time*delta;
+	this.createOutputLine = function(){
+		if(typeof this.outputLines[this.activeLine] === 'undefined'){
+			var ptext = new PIXI.Text(null,this.textStyle);
+			ptext.x = 8;
+			ptext.y = (this.columns*this.activeLine)+8;
+			this.outputLines.push(ptext);
+		} else {
+			var ptext = this.outputLines[this.activeLine];
+		}
+
+		return ptext;
+	}
+
+	this.linebreak = function(){
+		this.activeLine++;
 	}
 }
